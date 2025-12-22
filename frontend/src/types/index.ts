@@ -59,6 +59,14 @@ export interface TableDetails {
   indexes: IndexInfo[];
 }
 
+export interface UpdateInfo {
+  currentVersion: string;
+  latestVersion: string;
+  releaseNotes: string;
+  url: string;
+  hasUpdate: boolean;
+}
+
 // Table alteration request
 export interface TableAlteration {
   addColumns: ColumnInfo[];

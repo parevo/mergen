@@ -6,6 +6,14 @@ export function AlterTable(arg1, arg2, arg3) {
   return window['go']['main']['App']['AlterTable'](arg1, arg2, arg3);
 }
 
+export function ApplyUpdate(arg1) {
+  return window['go']['main']['App']['ApplyUpdate'](arg1);
+}
+
+export function CheckForUpdate() {
+  return window['go']['main']['App']['CheckForUpdate']();
+}
+
 export function Connect(arg1) {
   return window['go']['main']['App']['Connect'](arg1);
 }
@@ -36,6 +44,10 @@ export function ExecuteQuery(arg1) {
 
 export function ExecuteStatement(arg1) {
   return window['go']['main']['App']['ExecuteStatement'](arg1);
+}
+
+export function GetAppVersion() {
+  return window['go']['main']['App']['GetAppVersion']();
 }
 
 export function GetColumns(arg1, arg2) {
@@ -76,6 +88,10 @@ export function LoadConnections() {
 
 export function RenameConnection(arg1, arg2) {
   return window['go']['main']['App']['RenameConnection'](arg1, arg2);
+}
+
+export function RestartApp() {
+  return window['go']['main']['App']['RestartApp']();
 }
 
 export function SaveConnection(arg1, arg2) {

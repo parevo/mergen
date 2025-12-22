@@ -4,6 +4,10 @@ import {database} from '../models';
 
 export function AlterTable(arg1:string,arg2:string,arg3:database.TableAlteration):Promise<void>;
 
+export function ApplyUpdate(arg1:string):Promise<void>;
+
+export function CheckForUpdate():Promise<database.UpdateInfo>;
+
 export function Connect(arg1:database.ConnectionConfig):Promise<void>;
 
 export function DeleteConnection(arg1:string):Promise<void>;
@@ -19,6 +23,8 @@ export function DropTable(arg1:string,arg2:string):Promise<void>;
 export function ExecuteQuery(arg1:string):Promise<database.QueryResult>;
 
 export function ExecuteStatement(arg1:string):Promise<database.ExecuteResult>;
+
+export function GetAppVersion():Promise<string>;
 
 export function GetColumns(arg1:string,arg2:string):Promise<Array<database.ColumnInfo>>;
 
@@ -39,6 +45,8 @@ export function IsFullscreen():Promise<boolean>;
 export function LoadConnections():Promise<Array<database.SavedConnection>>;
 
 export function RenameConnection(arg1:string,arg2:string):Promise<void>;
+
+export function RestartApp():Promise<void>;
 
 export function SaveConnection(arg1:string,arg2:database.ConnectionConfig):Promise<void>;
 

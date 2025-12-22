@@ -5,14 +5,17 @@ import (
 
 	"opendb/database"
 
-	wailsRuntime "github.com/wailsapp/wails/v2/pkg/runtime"
+	"github.com/wailsapp/wails/v2/pkg/runtime"
 )
+
+var AppVersion = "v0.0.0-dev"
 
 // App struct
 type App struct {
 	ctx     context.Context
 	db      *database.Manager
 	storage *database.Storage
+	updater *database.Updater
 }
 
 // NewApp creates a new App application struct
@@ -21,12 +24,14 @@ func NewApp() *App {
 	return &App{
 		db:      database.NewManager(),
 		storage: storage,
+		updater: database.NewUpdater(),
 	}
 }
 
 // startup is called when the app starts
 func (a *App) startup(ctx context.Context) {
 	a.ctx = ctx
+	a.updater.SetContext(ctx)
 }
 
 // shutdown is called when the app quits
@@ -180,14 +185,43 @@ func (a *App) DropTable(dbName, table string) error {
 
 // ToggleFullscreen toggles the window fullscreen state
 func (a *App) ToggleFullscreen() {
-	if wailsRuntime.WindowIsFullscreen(a.ctx) {
-		wailsRuntime.WindowUnfullscreen(a.ctx)
+	if runtime.WindowIsFullscreen(a.ctx) {
+		runtime.WindowUnfullscreen(a.ctx)
 	} else {
-		wailsRuntime.WindowFullscreen(a.ctx)
+		runtime.WindowFullscreen(a.ctx)
 	}
 }
 
 // IsFullscreen returns true if the window is fullscreen
 func (a *App) IsFullscreen() bool {
-	return wailsRuntime.WindowIsFullscreen(a.ctx)
+	return runtime.WindowIsFullscreen(a.ctx)
+}
+
+// GetAppVersion returns the current application version
+func (a *App) GetAppVersion() string {
+	return AppVersion
+}
+
+// ====================
+// Update Methods
+// ====================
+
+// CheckForUpdate checks if a new version is available on GitHub
+func (a *App) CheckForUpdate() (*database.UpdateInfo, error) {
+	return a.updater.CheckForUpdate(AppVersion)
+}
+
+// ApplyUpdate downloads and installs the latest version
+func (a *App) ApplyUpdate(latestVersion string) error {
+	err := a.updater.ApplyUpdate(latestVersion)
+	if err != nil {
+		return err
+	}
+	// After update, we should notify the user or restart
+	return nil
+}
+
+// RestartApp restarts the application
+func (a *App) RestartApp() error {
+	return a.updater.RestartApp()
 }

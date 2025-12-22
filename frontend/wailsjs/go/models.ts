@@ -292,6 +292,26 @@ export namespace database {
 	        this.createTime = source["createTime"];
 	    }
 	}
+	export class UpdateInfo {
+	    currentVersion: string;
+	    latestVersion: string;
+	    releaseNotes: string;
+	    url: string;
+	    hasUpdate: boolean;
+	
+	    static createFrom(source: any = {}) {
+	        return new UpdateInfo(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.currentVersion = source["currentVersion"];
+	        this.latestVersion = source["latestVersion"];
+	        this.releaseNotes = source["releaseNotes"];
+	        this.url = source["url"];
+	        this.hasUpdate = source["hasUpdate"];
+	    }
+	}
 
 }
 

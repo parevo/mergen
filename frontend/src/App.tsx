@@ -8,8 +8,9 @@ import { QueryEditor } from './components/QueryEditor';
 import { ResultsTable } from './components/ResultsTable';
 import { DataEditor } from './components/DataEditor';
 import { ConnectionModal } from './components/ConnectionModal';
-import { ConnectionConfig } from './types';
-import { ToggleFullscreen } from '../wailsjs/go/main/App';
+import { ConnectionConfig, UpdateInfo } from './types';
+import { ToggleFullscreen, CheckForUpdate, GetAppVersion } from '../wailsjs/go/main/App';
+import { UpdateModal } from './components/UpdateModal';
 import {
     ResizableHandle,
     ResizablePanel,
@@ -29,6 +30,7 @@ import {
 } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 import { cn } from '@/lib/utils';
+import runeLogo from './assets/images/logo-universal.png';
 
 function App() {
     const {
@@ -68,9 +70,27 @@ function App() {
     const [modalOpen, setModalOpen] = useState(false);
     const [modalData, setModalData] = useState<{ config?: ConnectionConfig; name?: string }>({});
 
-    // Track active connection name for UI
     const [activeConnectionName, setActiveConnectionName] = useState<string | undefined>(undefined);
     const [isFullscreen, setIsFullscreen] = useState(false);
+    const [updateInfo, setUpdateInfo] = useState<UpdateInfo | null>(null);
+    const [appVersion, setAppVersion] = useState("V0.1.0-ALPHA");
+
+    useEffect(() => {
+        const init = async () => {
+            try {
+                const ver = await GetAppVersion();
+                setAppVersion(ver);
+
+                const info = await CheckForUpdate();
+                if (info && info.hasUpdate) {
+                    setUpdateInfo(info);
+                }
+            } catch (err) {
+                console.error("Initialization failed:", err);
+            }
+        };
+        init();
+    }, []);
 
     const handleToggleFullscreen = async () => {
         await ToggleFullscreen();
@@ -143,8 +163,8 @@ function App() {
             <header className="h-12 border-b bg-card/50 backdrop-blur-xl flex items-center justify-between px-4 shrink-0 shadow-lg z-30">
                 <div className="flex items-center gap-6">
                     <div className="flex items-center gap-2 group cursor-pointer" onClick={() => setViewMode('hub')}>
-                        <div className="w-8 h-8 rounded-xl bg-primary flex items-center justify-center text-primary-foreground shadow-xl shadow-primary/20 transition-all group-hover:rotate-12 group-active:scale-90">
-                            <Database size={18} strokeWidth={2.5} />
+                        <div className="w-8 h-8 rounded-xl bg-primary/10 flex items-center justify-center shadow-xl shadow-primary/20 transition-all group-hover:rotate-12 group-active:scale-90 border border-primary/20 overflow-hidden p-1.5">
+                            <img src={runeLogo} alt="RuneDB" className="w-full h-full object-contain" />
                         </div>
                         <h1 className="text-base font-black tracking-tighter uppercase italic bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
                             RuneDB
@@ -327,12 +347,20 @@ function App() {
                 />
             )}
 
+            {/* Update Modal */}
+            {updateInfo && (
+                <UpdateModal
+                    updateInfo={updateInfo}
+                    onClose={() => setUpdateInfo(null)}
+                />
+            )}
+
             {/* Slim Status Footer */}
             <footer className="h-8 border-t bg-card/80 flex items-center px-4 justify-between shrink-0 shadow-inner">
                 <div className="flex items-center gap-4 text-[9px] text-muted-foreground font-black uppercase tracking-widest">
                     <span className="flex items-center gap-1.5 opacity-60">
                         <Info size={10} strokeWidth={3} />
-                        CORE V0.1.0-ALPHA
+                        CORE {appVersion}
                     </span>
                     <Separator orientation="vertical" className="h-3 bg-border" />
                     <span className="opacity-40 select-none">LICENSE: MIT</span>
