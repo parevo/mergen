@@ -12,15 +12,15 @@ jobs:
         include:
           - os: windows-latest
             platform: windows/amd64
-            name: runedb_windows_amd64.exe
+            name: rune_windows_amd64.exe
             args: ""
           - os: ubuntu-22.04
             platform: linux/amd64
-            name: runedb_linux_amd64
+            name: rune_linux_amd64
             args: ""
           - os: macos-latest
             platform: darwin/universal
-            name: runedb_darwin_universal.zip
+            name: rune_darwin_universal.zip
             args: ""
 
     runs-on: ${{ matrix.os }}
