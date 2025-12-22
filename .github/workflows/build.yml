@@ -12,15 +12,15 @@ jobs:
         include:
           - os: windows-latest
             platform: windows/amd64
-            name: runedb-windows-amd64-installer.exe
-            args: "-nsis"
+            name: runedb_windows_amd64.exe
+            args: ""
           - os: ubuntu-22.04
             platform: linux/amd64
-            name: runedb-linux-amd64
+            name: runedb_linux_amd64
             args: ""
           - os: macos-latest
             platform: darwin/universal
-            name: runedb-macos-universal.zip
+            name: runedb_darwin_universal.zip
             args: ""
 
     runs-on: ${{ matrix.os }}
@@ -62,9 +62,8 @@ jobs:
         shell: bash
         run: |
           if [ "${{ matrix.os }}" == "windows-latest" ]; then
-            # NSIS creates the installer in build/bin/runedb-amd64-installer.exe (or similar)
-            # We look for the .exe that isn't just runedb.exe if -nsis was used
-            mv build/bin/*installer.exe ${{ matrix.name }} || mv build/bin/runedb.exe ${{ matrix.name }}
+            # Move the built binary directly
+            mv build/bin/runedb.exe ${{ matrix.name }}
           elif [ "${{ matrix.os }}" == "ubuntu-22.04" ]; then
             mv build/bin/runedb ${{ matrix.name }}
           else

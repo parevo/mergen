@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"strings"
 
 	"github.com/creativeprojects/go-selfupdate"
 )
@@ -32,7 +33,9 @@ func (u *Updater) SetContext(ctx context.Context) {
 func (u *Updater) CheckForUpdate(currentVersion string) (*UpdateInfo, error) {
 	slug := selfupdate.ParseSlug("ahmetcanbilgay/rune")
 
-	updater, err := selfupdate.NewUpdater(selfupdate.Config{})
+	updater, err := selfupdate.NewUpdater(selfupdate.Config{
+		UniversalArch: "universal",
+	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to create updater: %w", err)
 	}
@@ -49,10 +52,9 @@ func (u *Updater) CheckForUpdate(currentVersion string) (*UpdateInfo, error) {
 		}, nil
 	}
 
-	hasUpdate := latest.Version() > currentVersion
-	if currentVersion == "v0.0.0" {
-		hasUpdate = true
-	}
+	// Strip 'v' prefix for semantic comparison
+	cleanCurrentVersion := strings.TrimPrefix(currentVersion, "v")
+	hasUpdate := latest.GreaterThan(cleanCurrentVersion)
 
 	return &UpdateInfo{
 		CurrentVersion: currentVersion,
@@ -66,7 +68,9 @@ func (u *Updater) CheckForUpdate(currentVersion string) (*UpdateInfo, error) {
 func (u *Updater) ApplyUpdate(latestVersion string) error {
 	slug := selfupdate.ParseSlug("ahmetcanbilgay/rune")
 
-	updater, err := selfupdate.NewUpdater(selfupdate.Config{})
+	updater, err := selfupdate.NewUpdater(selfupdate.Config{
+		UniversalArch: "universal",
+	})
 	if err != nil {
 		return err
 	}
