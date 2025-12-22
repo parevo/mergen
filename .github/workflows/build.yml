@@ -12,13 +12,16 @@ jobs:
         include:
           - os: windows-latest
             platform: windows/amd64
-            name: runedb-windows-amd64.exe
+            name: runedb-windows-amd64-installer.exe
+            args: "-nsis"
           - os: ubuntu-22.04
             platform: linux/amd64
             name: runedb-linux-amd64
+            args: ""
           - os: macos-latest
             platform: darwin/universal
-            name: runedb-macos-universal
+            name: runedb-macos-universal.zip
+            args: ""
 
     runs-on: ${{ matrix.os }}
 
@@ -53,19 +56,21 @@ jobs:
 
       - name: Wails Build
         run: |
-          wails build -platform ${{ matrix.platform }} -clean
+          wails build -platform ${{ matrix.platform }} -clean ${{ matrix.args }}
 
       - name: Rename and Prepare Binary
         shell: bash
         run: |
           if [ "${{ matrix.os }}" == "windows-latest" ]; then
-            mv build/bin/runedb.exe ${{ matrix.name }}
+            # NSIS creates the installer in build/bin/runedb-amd64-installer.exe (or similar)
+            # We look for the .exe that isn't just runedb.exe if -nsis was used
+            mv build/bin/*installer.exe ${{ matrix.name }} || mv build/bin/runedb.exe ${{ matrix.name }}
           elif [ "${{ matrix.os }}" == "ubuntu-22.04" ]; then
             mv build/bin/runedb ${{ matrix.name }}
           else
-            # For macOS, wails build usually creates a .app or binary
-            # darwin/universal creates a universal binary
-            mv build/bin/runedb.app/Contents/MacOS/runedb ${{ matrix.name }} || mv build/bin/runedb ${{ matrix.name }}
+            # For macOS, zip the .app bundle
+            cd build/bin
+            zip -r ../../${{ matrix.name }} runedb.app
           fi
 
       - name: Upload Artifacts
