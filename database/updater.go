@@ -30,11 +30,22 @@ func (u *Updater) SetContext(ctx context.Context) {
 	u.ctx = ctx
 }
 
+type noOpValidator struct{}
+
+func (n *noOpValidator) Validate(releaseID string, asset []byte, validationData []byte) error {
+	return nil
+}
+
+func (n *noOpValidator) GetValidationAssetName(asset string) string {
+	return ""
+}
+
 func (u *Updater) CheckForUpdate(currentVersion string) (*UpdateInfo, error) {
 	slug := selfupdate.ParseSlug("ahmetcanbilgay/rune")
 
 	updater, err := selfupdate.NewUpdater(selfupdate.Config{
 		UniversalArch: "universal",
+		Validator:     &noOpValidator{},
 	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to create updater: %w", err)
@@ -42,7 +53,15 @@ func (u *Updater) CheckForUpdate(currentVersion string) (*UpdateInfo, error) {
 
 	latest, found, err := updater.DetectLatest(context.Background(), slug)
 	if err != nil {
+		fmt.Printf("UPDATE DEBUG: DetectLatest error: %v\n", err)
 		return nil, fmt.Errorf("failed to detect latest version: %w", err)
+	}
+
+	fmt.Printf("UPDATE DEBUG: DetectLatest found: %v\n", found)
+	if found {
+		fmt.Printf("UPDATE DEBUG: Latest version from GitHub: %s\n", latest.Version())
+		fmt.Printf("UPDATE DEBUG: Asset URL: %s\n", latest.AssetURL)
+		fmt.Printf("UPDATE DEBUG: Release URL: %s\n", latest.URL)
 	}
 
 	if !found {
@@ -55,6 +74,9 @@ func (u *Updater) CheckForUpdate(currentVersion string) (*UpdateInfo, error) {
 	// Strip 'v' prefix for semantic comparison
 	cleanCurrentVersion := strings.TrimPrefix(currentVersion, "v")
 	hasUpdate := latest.GreaterThan(cleanCurrentVersion)
+
+	fmt.Printf("UPDATE DEBUG: Current Version: %s (Clean: %s)\n", currentVersion, cleanCurrentVersion)
+	fmt.Printf("UPDATE DEBUG: Has Update: %v\n", hasUpdate)
 
 	return &UpdateInfo{
 		CurrentVersion: currentVersion,
@@ -70,6 +92,7 @@ func (u *Updater) ApplyUpdate(latestVersion string) error {
 
 	updater, err := selfupdate.NewUpdater(selfupdate.Config{
 		UniversalArch: "universal",
+		Validator:     &noOpValidator{},
 	})
 	if err != nil {
 		return err
