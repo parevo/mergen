@@ -71,13 +71,10 @@ function App() {
     // Tab State
     const [tabs, setTabs] = useState<Tab[]>(() => {
         const saved = localStorage.getItem('opendb_tabs');
-        // We use a constant for the title here because it's initial state, but we should potentially localize it dynamically if re-rendered.
-        // However, tabs state is persisted. We might want to store 'type' and resolve title visually if generic.
-        // For now, let's keep it simple.
-        return saved ? JSON.parse(saved) : [{ id: 'query-main', type: 'query', title: t('app.queryEditor') }];
+        return saved ? JSON.parse(saved) : [];
     });
     const [activeTabId, setActiveTabId] = useState<string>(() => {
-        return localStorage.getItem('opendb_active_tab') || 'query-main';
+        return localStorage.getItem('opendb_active_tab') || '';
     });
     // Schema for autocomplete
     const [dbSchema, setDbSchema] = useState<Record<string, string[]> | null>(null);
@@ -219,6 +216,16 @@ function App() {
     }, [query, executeQueries, tabs, activeTab]);
 
 
+    const handleNewQueryTab = useCallback(() => {
+        const newTab: Tab = {
+            id: `query-${Date.now()}`,
+            type: 'query',
+            title: t('app.newQuery')
+        };
+        setTabs(prev => [...prev, newTab]);
+        setActiveTabId(newTab.id);
+    }, [t]);
+
     const handleOpenModal = (config?: ConnectionConfig, name?: string) => {
         setModalData({ config, name });
         setModalOpen(true);
@@ -315,9 +322,14 @@ function App() {
 
                     {connected && (
                         <div className="flex items-center h-full gap-1">
-                            {/* Replaced by TabBar in main area */}
+                            <button
+                                onClick={handleNewQueryTab}
+                                className="flex items-center gap-2 px-3 py-1.5 rounded-md bg-primary/10 text-primary hover:bg-primary/20 transition-all font-bold text-[10px] uppercase tracking-wider border border-primary/20"
+                            >
+                                <Code2 size={12} strokeWidth={2.5} />
+                                {t('app.newQuery')}
+                            </button>
                         </div>
-
                     )}
                 </div>
 
@@ -391,6 +403,7 @@ function App() {
                                 activeTabId={activeTabId}
                                 onTabSelect={setActiveTabId}
                                 onTabClose={handleTabClose}
+                                onAddTab={handleNewQueryTab}
                             />
                         )}
 
@@ -432,8 +445,18 @@ function App() {
                                     }}
                                 />
                             ) : (
-                                <div className="p-10 flex items-center justify-center h-full text-muted-foreground opacity-50 text-sm font-bold uppercase tracking-widest">
-                                    {t('app.noTabSelected')}
+                                <div className="p-10 flex flex-col items-center justify-center h-full text-muted-foreground opacity-50 gap-4">
+                                    <span className="text-sm font-bold uppercase tracking-widest">{t('app.noTabSelected')}</span>
+                                    <div className="flex gap-2">
+                                        <button
+                                            onClick={handleNewQueryTab}
+                                            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-primary/10 text-primary hover:bg-primary/20 transition-colors font-bold text-xs uppercase tracking-wider"
+                                        >
+                                            <Code2 size={16} />
+                                            {t('app.newQuery')}
+                                        </button>
+                                    </div>
+                                    <p className="text-[10px] font-mono opacity-50">Press Cmd+K for commands</p>
                                 </div>
                             )}
                         </div>
@@ -461,29 +484,33 @@ function App() {
                         )}
                     </ResizablePanel>
 
-                </ResizablePanelGroup>
-            </div>
+                </ResizablePanelGroup >
+            </div >
 
             {/* Premium Modal */}
-            {modalOpen && (
-                <ConnectionModal
-                    title={modalData.name ? t('app.editConnection') : t('app.newConnection')}
-                    initialConfig={modalData.config}
-                    initialName={modalData.name}
-                    onSave={handleSaveModal}
-                    onClose={() => setModalOpen(false)}
-                    onTest={testConnection}
-                    loading={loading}
-                />
-            )}
+            {
+                modalOpen && (
+                    <ConnectionModal
+                        title={modalData.name ? t('app.editConnection') : t('app.newConnection')}
+                        initialConfig={modalData.config}
+                        initialName={modalData.name}
+                        onSave={handleSaveModal}
+                        onClose={() => setModalOpen(false)}
+                        onTest={testConnection}
+                        loading={loading}
+                    />
+                )
+            }
 
             {/* Update Modal */}
-            {updateInfo && (
-                <UpdateModal
-                    updateInfo={updateInfo}
-                    onClose={() => setUpdateInfo(null)}
-                />
-            )}
+            {
+                updateInfo && (
+                    <UpdateModal
+                        updateInfo={updateInfo}
+                        onClose={() => setUpdateInfo(null)}
+                    />
+                )
+            }
 
             {/* Slim Status Footer */}
             <footer className="h-8 border-t bg-card/80 flex items-center px-4 justify-between shrink-0 shadow-inner">
@@ -511,15 +538,7 @@ function App() {
                 databases={databases}
                 currentDb={currentDb}
                 connected={connected}
-                onNewQueryTab={() => {
-                    const newTab: Tab = {
-                        id: `query-${Date.now()}`,
-                        type: 'query',
-                        title: t('app.newQuery')
-                    };
-                    setTabs(prev => [...prev, newTab]);
-                    setActiveTabId(newTab.id);
-                }}
+                onNewQueryTab={handleNewQueryTab}
                 onSwitchDb={handleSelectDatabase}
                 onOpenHistory={() => {
                     // Focus query editor and open history popover
@@ -535,7 +554,7 @@ function App() {
                 }}
                 onOpenSettings={() => setModalOpen(true)}
             />
-        </div>
+        </div >
     );
 }
 

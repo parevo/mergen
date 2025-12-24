@@ -1,4 +1,4 @@
-import { X, Database, Code2 } from 'lucide-react';
+import { X, Database, Code2, Plus } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Tab } from '../types/tabs';
 
@@ -7,9 +7,10 @@ interface TabBarProps {
     activeTabId: string;
     onTabSelect: (id: string) => void;
     onTabClose: (id: string, e: React.MouseEvent) => void;
+    onAddTab?: () => void;
 }
 
-export function TabBar({ tabs, activeTabId, onTabSelect, onTabClose }: TabBarProps) {
+export function TabBar({ tabs, activeTabId, onTabSelect, onTabClose, onAddTab }: TabBarProps) {
     return (
         <div className="flex items-center h-9 bg-muted/40 border-b overflow-x-auto no-scrollbar px-1 gap-1">
             {tabs.map((tab) => (
@@ -36,20 +37,18 @@ export function TabBar({ tabs, activeTabId, onTabSelect, onTabClose }: TabBarPro
                         Let's make Query Editor permanent for now or at least one tab must exist?
                         For now, allow closing tables. Query Logic might be special.
                     */}
-                    {tab.type === 'table' && (
-                        <div
-                            onClick={(e) => {
-                                e.stopPropagation();
-                                onTabClose(tab.id, e);
-                            }}
-                            className={cn(
-                                "w-4 h-4 rounded hover:bg-destructive/10 hover:text-destructive flex items-center justify-center transition-colors opacity-0 group-hover:opacity-100",
-                                activeTabId === tab.id && "opacity-100"
-                            )}
-                        >
-                            <X size={10} strokeWidth={3} />
-                        </div>
-                    )}
+                    <div
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            onTabClose(tab.id, e);
+                        }}
+                        className={cn(
+                            "w-4 h-4 rounded hover:bg-destructive/10 hover:text-destructive flex items-center justify-center transition-colors opacity-0 group-hover:opacity-100",
+                            activeTabId === tab.id && "opacity-100"
+                        )}
+                    >
+                        <X size={10} strokeWidth={3} />
+                    </div>
                 </div>
             ))}
         </div>
