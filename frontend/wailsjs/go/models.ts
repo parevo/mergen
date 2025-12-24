@@ -7,6 +7,7 @@ export namespace database {
 	    key: string;
 	    default: string;
 	    extra: string;
+	    oldName?: string;
 	
 	    static createFrom(source: any = {}) {
 	        return new ColumnInfo(source);
@@ -20,6 +21,7 @@ export namespace database {
 	        this.key = source["key"];
 	        this.default = source["default"];
 	        this.extra = source["extra"];
+	        this.oldName = source["oldName"];
 	    }
 	}
 	export class ConnectionConfig {

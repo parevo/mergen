@@ -70,6 +70,7 @@ type ColumnInfo struct {
 	Key      string `json:"key"`
 	Default  string `json:"default"`
 	Extra    string `json:"extra"`
+	OldName  string `json:"oldName,omitempty"` // For renaming columns
 }
 
 // IndexInfo represents an index

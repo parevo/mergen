@@ -90,7 +90,7 @@ export function ModifyTableModal({ database, table, columns, onSave, onClose, lo
     const handleSave = async () => {
         const alteration: TableAlteration = {
             addColumns: columnStates.filter(c => c.isNew && !c.isDeleted).map(({ isNew, isDeleted, isModified, oldName, ...c }) => c),
-            modifyColumns: columnStates.filter(c => !c.isNew && c.isModified && !c.isDeleted).map(({ isNew, isDeleted, isModified, oldName, ...c }) => c),
+            modifyColumns: columnStates.filter(c => !c.isNew && c.isModified && !c.isDeleted).map(({ isNew, isDeleted, isModified, ...c }) => ({ ...c, oldName: c.oldName })),
             dropColumns: columnStates.filter(c => !c.isNew && c.isDeleted).map(c => c.oldName || c.name),
             renameTo: table // For now, keep table name same
         };
@@ -171,6 +171,10 @@ export function ModifyTableModal({ database, table, columns, onSave, onClose, lo
                                                     <SelectValue />
                                                 </SelectTrigger>
                                                 <SelectContent>
+                                                    {/* Ensure current type is always an option */}
+                                                    {!mysqlTypes.includes(col.type) && (
+                                                        <SelectItem value={col.type} className="text-[11px] font-mono">{col.type.toUpperCase()}</SelectItem>
+                                                    )}
                                                     {mysqlTypes.map(t => (
                                                         <SelectItem key={t} value={t} className="text-[11px]">{t.toUpperCase()}</SelectItem>
                                                     ))}

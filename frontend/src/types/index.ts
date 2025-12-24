@@ -63,6 +63,7 @@ export interface ColumnInfo {
   key: string;
   default: string;
   extra: string;
+  oldName?: string;
 }
 
 export interface IndexInfo {

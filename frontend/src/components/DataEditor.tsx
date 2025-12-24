@@ -37,6 +37,13 @@ import { Badge } from "@/components/ui/badge";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import { Card, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/ui/select";
 import { cn } from '@/lib/utils';
 import { toast } from "sonner";
 import {
@@ -170,7 +177,7 @@ export function DataEditor({ database, table, onClose }: Props) {
         }
     };
 
-    const handleAddRow = async () => {
+    const handleAddRow = async (keepOpen = false) => {
         if (!data) return;
 
         const rowData: Record<string, any> = {};
@@ -183,7 +190,9 @@ export function DataEditor({ database, table, onClose }: Props) {
         try {
             await InsertRow(database, table, rowData);
             setNewRowData({});
-            setShowAddRow(false);
+            if (!keepOpen) {
+                setShowAddRow(false);
+            }
             toast.success("New row inserted successfully");
             await loadData();
         } catch (err: any) {
@@ -437,18 +446,43 @@ export function DataEditor({ database, table, onClose }: Props) {
                                             <span className="text-[8px] opacity-40 uppercase">{col.type}</span>
                                         </div>
                                     </div>
-                                    <Input
-                                        className="h-7 text-xs bg-background"
-                                        value={newRowData[col.name] || ''}
-                                        onChange={(e) => setNewRowData({ ...newRowData, [col.name]: e.target.value })}
-                                        placeholder={col.nullable ? 'NULL' : col.name}
-                                    />
+                                    {col.type.includes('bool') || col.type.includes('tinyint(1)') ? (
+                                        <Select
+                                            value={newRowData[col.name]}
+                                            onValueChange={(val) => setNewRowData({ ...newRowData, [col.name]: val })}
+                                        >
+                                            <SelectTrigger className="h-7 text-xs bg-background">
+                                                <SelectValue placeholder={col.nullable ? "NULL" : "Select..."} />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                {col.nullable && <SelectItem value="">NULL</SelectItem>}
+                                                <SelectItem value="1">TRUE</SelectItem>
+                                                <SelectItem value="0">FALSE</SelectItem>
+                                            </SelectContent>
+                                        </Select>
+                                    ) : (
+                                        <Input
+                                            className="h-7 text-xs bg-background"
+                                            value={newRowData[col.name] || ''}
+                                            onChange={(e) => setNewRowData({ ...newRowData, [col.name]: e.target.value })}
+                                            placeholder={col.nullable ? 'NULL' : col.name}
+                                            type={col.type.includes('int') || col.type.includes('decimal') || col.type.includes('float') ? 'number' : 'text'}
+                                        />
+                                    )}
                                 </div>
                             ))}
                         </div>
                         <div className="flex justify-end gap-2 mt-6">
                             <Button variant="ghost" size="sm" className="h-8 text-[11px] font-bold" onClick={() => setShowAddRow(false)}>CANCEL</Button>
-                            <Button size="sm" className="h-8 px-6 text-[11px] font-bold uppercase" onClick={handleAddRow}>Commit Row</Button>
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                className="h-8 px-4 text-[11px] font-bold uppercase border-primary/20 text-primary hover:bg-primary/5"
+                                onClick={() => handleAddRow(true)}
+                            >
+                                Commit & Add Another
+                            </Button>
+                            <Button size="sm" className="h-8 px-6 text-[11px] font-bold uppercase" onClick={() => handleAddRow(false)}>Commit Row</Button>
                         </div>
                     </CardContent>
                 </Card>

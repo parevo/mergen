@@ -266,8 +266,15 @@ func (d *MySQLDriver) BuildAlterTableQuery(database, table string, alteration Ta
 		if col.Default != "" {
 			defaultStr = fmt.Sprintf(" DEFAULT '%s'", col.Default)
 		}
-		statements = append(statements, fmt.Sprintf("ALTER TABLE `%s`.`%s` MODIFY COLUMN `%s` %s %s%s %s",
-			database, table, col.Name, col.Type, nullStr, defaultStr, col.Extra))
+
+		// Use CHANGE COLUMN if renaming, otherwise MODIFY COLUMN
+		if col.OldName != "" && col.OldName != col.Name {
+			statements = append(statements, fmt.Sprintf("ALTER TABLE `%s`.`%s` CHANGE COLUMN `%s` `%s` %s %s%s %s",
+				database, table, col.OldName, col.Name, col.Type, nullStr, defaultStr, col.Extra))
+		} else {
+			statements = append(statements, fmt.Sprintf("ALTER TABLE `%s`.`%s` MODIFY COLUMN `%s` %s %s%s %s",
+				database, table, col.Name, col.Type, nullStr, defaultStr, col.Extra))
+		}
 	}
 
 	return statements, nil
