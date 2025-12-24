@@ -34,7 +34,7 @@ func (u *Updater) CheckForUpdate(currentVersion string) (*UpdateInfo, error) {
 	slug := selfupdate.ParseSlug("parevo-lab/mergen")
 
 	updater, err := selfupdate.NewUpdater(selfupdate.Config{
-		Filters:       []string{"^mergen_"},
+		Filters:       []string{"^Mergen_"},
 		UniversalArch: "universal",
 	})
 	if err != nil {
@@ -70,7 +70,7 @@ func (u *Updater) ApplyUpdate(latestVersion string) error {
 	slug := selfupdate.ParseSlug("parevo-lab/mergen")
 
 	updater, err := selfupdate.NewUpdater(selfupdate.Config{
-		Filters:       []string{"^mergen_"},
+		Filters:       []string{"^Mergen_"},
 		UniversalArch: "universal",
 	})
 	if err != nil {
