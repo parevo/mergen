@@ -29,6 +29,19 @@ export namespace database {
 	    user: string;
 	    password: string;
 	    database: string;
+	    color: string;
+	    useSSL: boolean;
+	    sslMode: string;
+	    sslCACert: string;
+	    sslClientCert: string;
+	    sslClientKey: string;
+	    useSSHTunnel: boolean;
+	    sshHost: string;
+	    sshPort: number;
+	    sshUser: string;
+	    sshPassword: string;
+	    sshPrivateKey: string;
+	    sshPassphrase: string;
 	
 	    static createFrom(source: any = {}) {
 	        return new ConnectionConfig(source);
@@ -42,6 +55,19 @@ export namespace database {
 	        this.user = source["user"];
 	        this.password = source["password"];
 	        this.database = source["database"];
+	        this.color = source["color"];
+	        this.useSSL = source["useSSL"];
+	        this.sslMode = source["sslMode"];
+	        this.sslCACert = source["sslCACert"];
+	        this.sslClientCert = source["sslClientCert"];
+	        this.sslClientKey = source["sslClientKey"];
+	        this.useSSHTunnel = source["useSSHTunnel"];
+	        this.sshHost = source["sshHost"];
+	        this.sshPort = source["sshPort"];
+	        this.sshUser = source["sshUser"];
+	        this.sshPassword = source["sshPassword"];
+	        this.sshPrivateKey = source["sshPrivateKey"];
+	        this.sshPassphrase = source["sshPassphrase"];
 	    }
 	}
 	export class DatabaseInfo {

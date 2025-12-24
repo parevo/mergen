@@ -3,6 +3,8 @@ package database
 import (
 	"database/sql"
 	"fmt"
+	"net"
+	"strconv"
 	"strings"
 	"sync"
 )
@@ -12,6 +14,7 @@ type Manager struct {
 	db     *sql.DB
 	config *ConnectionConfig
 	driver Driver
+	tunnel *SSHTunnel
 	mu     sync.RWMutex
 }
 
@@ -32,9 +35,6 @@ func (m *Manager) getDriver(config ConnectionConfig) (Driver, error) {
 	}
 }
 
-// strings is needed for strings.ToLower, let me check imports.
-// Actually I'll just write the file with correct imports.
-
 // Connect establishes a connection to the database
 func (m *Manager) Connect(config ConnectionConfig) error {
 	m.mu.Lock()
@@ -44,14 +44,51 @@ func (m *Manager) Connect(config ConnectionConfig) error {
 	if m.db != nil {
 		m.db.Close()
 	}
+	if m.tunnel != nil {
+		m.tunnel.Close()
+		m.tunnel = nil
+	}
+
+	// Setup SSH tunnel if configured
+	if config.UseSSHTunnel {
+		tunnel, err := NewSSHTunnel(config)
+		if err != nil {
+			return fmt.Errorf("failed to create SSH tunnel: %w", err)
+		}
+
+		localAddr, err := tunnel.Start(config)
+		if err != nil {
+			return fmt.Errorf("failed to start SSH tunnel: %w", err)
+		}
+
+		m.tunnel = tunnel
+
+		// Update config to use tunnel's local address
+		host, portStr, err := net.SplitHostPort(localAddr)
+		if err != nil {
+			tunnel.Close()
+			return fmt.Errorf("failed to parse tunnel address: %w", err)
+		}
+		port, _ := strconv.Atoi(portStr)
+		config.Host = host
+		config.Port = port
+	}
 
 	driver, err := m.getDriver(config)
 	if err != nil {
+		if m.tunnel != nil {
+			m.tunnel.Close()
+			m.tunnel = nil
+		}
 		return err
 	}
 
 	db, err := driver.Connect(config)
 	if err != nil {
+		if m.tunnel != nil {
+			m.tunnel.Close()
+			m.tunnel = nil
+		}
 		return err
 	}
 
@@ -66,12 +103,26 @@ func (m *Manager) Disconnect() error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
+	var errs []error
+
 	if m.db != nil {
-		err := m.db.Close()
+		if err := m.db.Close(); err != nil {
+			errs = append(errs, err)
+		}
 		m.db = nil
 		m.config = nil
 		m.driver = nil
-		return err
+	}
+
+	if m.tunnel != nil {
+		if err := m.tunnel.Close(); err != nil {
+			errs = append(errs, err)
+		}
+		m.tunnel = nil
+	}
+
+	if len(errs) > 0 {
+		return errs[0]
 	}
 	return nil
 }

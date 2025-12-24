@@ -12,8 +12,8 @@ import (
 type MySQLDriver struct{}
 
 func (d *MySQLDriver) Connect(config ConnectionConfig) (*sql.DB, error) {
-	dsn := fmt.Sprintf("%s:%s@tcp(%s:%d)/%s?parseTime=true",
-		config.User, config.Password, config.Host, config.Port, config.Database)
+	// Build DSN with SSL support
+	dsn := d.buildDSN(config)
 
 	db, err := sql.Open("mysql", dsn)
 	if err != nil {
@@ -30,6 +30,29 @@ func (d *MySQLDriver) Connect(config ConnectionConfig) (*sql.DB, error) {
 	}
 
 	return db, nil
+}
+
+// buildDSN constructs the MySQL DSN with SSL support
+func (d *MySQLDriver) buildDSN(config ConnectionConfig) string {
+	params := []string{"parseTime=true"}
+
+	// SSL/TLS configuration
+	if config.UseSSL {
+		switch config.SSLMode {
+		case "require":
+			params = append(params, "tls=skip-verify")
+		case "verify-ca", "verify-full":
+			params = append(params, "tls=true")
+		default:
+			// disable or empty - no SSL
+		}
+	}
+
+	dsn := fmt.Sprintf("%s:%s@tcp(%s:%d)/%s?%s",
+		config.User, config.Password, config.Host, config.Port, config.Database,
+		strings.Join(params, "&"))
+
+	return dsn
 }
 
 func (d *MySQLDriver) GetDatabases(db *sql.DB) ([]string, error) {

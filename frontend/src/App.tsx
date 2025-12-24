@@ -8,6 +8,7 @@ import { QueryEditor } from './components/QueryEditor';
 import { ResultsTable } from './components/ResultsTable';
 import { DataEditor } from './components/DataEditor';
 import { ConnectionModal } from './components/ConnectionModal';
+import { CommandPalette, useCommandPalette } from './components/CommandPalette';
 import { ConnectionConfig, UpdateInfo } from './types';
 import { ToggleFullscreen, CheckForUpdate, GetAppVersion } from '../wailsjs/go/main/App';
 import { UpdateModal } from './components/UpdateModal';
@@ -86,6 +87,9 @@ function App() {
     const [isFullscreen, setIsFullscreen] = useState(false);
     const [updateInfo, setUpdateInfo] = useState<UpdateInfo | null>(null);
     const [appVersion, setAppVersion] = useState("V0.1.0-ALPHA");
+
+    // Command Palette
+    const { open: cmdOpen, setOpen: setCmdOpen } = useCommandPalette();
 
     useEffect(() => {
         const init = async () => {
@@ -268,11 +272,28 @@ function App() {
         return success;
     };
 
+    // Get active connection color
+    const activeConnection = savedConnections.find(c => c.name === activeConnectionName);
+    const connectionColor = activeConnection?.config.color;
+    const isProdEnv = connectionColor === '#ef4444';
 
     return (
-        <div className="flex flex-col h-screen bg-background text-foreground overflow-hidden font-sans select-none">
+        <div
+            className="flex flex-col h-screen bg-background text-foreground overflow-hidden font-sans select-none"
+            style={{
+                borderTopWidth: connectionColor ? '3px' : '0',
+                borderTopStyle: 'solid',
+                borderTopColor: connectionColor || 'transparent'
+            }}
+        >
             {/* Header */}
-            <header className="h-12 border-b bg-card/50 backdrop-blur-xl flex items-center justify-between px-4 shrink-0 shadow-lg z-30">
+            <header
+                className="h-12 border-b bg-card/50 backdrop-blur-xl flex items-center justify-between px-4 shrink-0 shadow-lg z-30"
+                style={{
+                    borderBottomColor: connectionColor ? `${connectionColor}40` : undefined,
+                    boxShadow: connectionColor ? `0 4px 20px ${connectionColor}15` : undefined
+                }}
+            >
                 <div className="flex items-center gap-6">
                     <div className="flex items-center gap-2 group cursor-pointer">
                         <div className="w-8 h-8 rounded-xl bg-primary flex items-center justify-center text-primary-foreground shadow-xl shadow-primary/20 transition-all group-hover:rotate-12 group-active:scale-90">
@@ -474,6 +495,38 @@ function App() {
                     )}
                 </div>
             </footer>
+
+            {/* Command Palette */}
+            <CommandPalette
+                open={cmdOpen}
+                onOpenChange={setCmdOpen}
+                databases={databases}
+                currentDb={currentDb}
+                connected={connected}
+                onNewQueryTab={() => {
+                    const newTab: Tab = {
+                        id: `query-${Date.now()}`,
+                        type: 'query',
+                        title: 'New Query'
+                    };
+                    setTabs(prev => [...prev, newTab]);
+                    setActiveTabId(newTab.id);
+                }}
+                onSwitchDb={handleSelectDatabase}
+                onOpenHistory={() => {
+                    // Focus query editor and open history popover
+                    const queryTab = tabs.find(t => t.type === 'query');
+                    if (queryTab) setActiveTabId(queryTab.id);
+                }}
+                onDisconnect={disconnect}
+                onRefresh={async () => {
+                    if (currentDb) {
+                        const schema = await getDatabaseSchema(currentDb);
+                        setDbSchema(schema);
+                    }
+                }}
+                onOpenSettings={() => setModalOpen(true)}
+            />
         </div>
     );
 }

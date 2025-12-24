@@ -1,7 +1,7 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, useCallback } from 'react';
 import Editor, { loader, Monaco } from '@monaco-editor/react';
 import { Button } from '@/components/ui/button';
-import { Play, Sparkles, Code2, Trash2, History, Clock } from 'lucide-react';
+import { Play, Sparkles, Code2, Trash2, History, Clock, AlignLeft } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { cn } from '@/lib/utils';
@@ -11,6 +11,7 @@ import {
     PopoverTrigger,
 } from "@/components/ui/popover";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { format as formatSQL } from 'sql-formatter';
 
 // Configure Monaco loader
 loader.config({ paths: { vs: 'https://cdn.jsdelivr.net/npm/monaco-editor@0.43.0/min/vs' } });
@@ -45,12 +46,32 @@ export function QueryEditor({ value, onChange, onExecute, loading, schema }: Pro
 
     const editorRef = useRef<any>(null);
 
+    // SQL Format handler
+    const handleFormat = useCallback(() => {
+        try {
+            const formatted = formatSQL(value, {
+                language: 'mysql',
+                tabWidth: 2,
+                keywordCase: 'upper',
+                linesBetweenQueries: 2,
+            });
+            onChange(formatted);
+        } catch (e) {
+            console.error('SQL Format error:', e);
+        }
+    }, [value, onChange]);
+
     const handleEditorDidMount = (editor: any, monaco: Monaco) => {
         editorRef.current = editor;
 
         // Add Cmd+Enter shortcut to run query
         editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.Enter, () => {
             handleExecuteWrapper();
+        });
+
+        // Add Cmd+Shift+F shortcut to format SQL
+        editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyMod.Shift | monaco.KeyCode.KeyF, () => {
+            handleFormat();
         });
     };
 
@@ -356,6 +377,16 @@ export function QueryEditor({ value, onChange, onExecute, loading, schema }: Pro
                             </ScrollArea>
                         </PopoverContent>
                     </Popover>
+
+                    <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-7 w-7 text-muted-foreground hover:text-primary"
+                        onClick={handleFormat}
+                        title="Format SQL (Cmd+Shift+F)"
+                    >
+                        <AlignLeft size={14} />
+                    </Button>
 
                     <Button
                         variant="ghost"

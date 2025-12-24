@@ -7,6 +7,25 @@ export interface ConnectionConfig {
   user: string;
   password: string;
   database: string;
+
+  // Connection Color Coding
+  color: string; // hex color e.g. "#ef4444" for prod
+
+  // SSL/TLS Configuration
+  useSSL: boolean;
+  sslMode: string; // disable, require, verify-ca, verify-full
+  sslCACert: string;
+  sslClientCert: string;
+  sslClientKey: string;
+
+  // SSH Tunnel Configuration
+  useSSHTunnel: boolean;
+  sshHost: string;
+  sshPort: number;
+  sshUser: string;
+  sshPassword: string;
+  sshPrivateKey: string;
+  sshPassphrase: string;
 }
 
 export interface SavedConnection {

@@ -15,7 +15,11 @@ import {
     Settings2,
     Eraser,
     AlertTriangle,
-    Hash
+    Hash,
+    Copy,
+    FileJson,
+    FileText,
+    Database
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -41,6 +45,13 @@ import {
     DropdownMenuTrigger,
     DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
+import {
+    ContextMenu,
+    ContextMenuContent,
+    ContextMenuItem,
+    ContextMenuSeparator,
+    ContextMenuTrigger,
+} from "@/components/ui/context-menu";
 import { useDatabase } from '../hooks/useDatabase';
 import { ModifyTableModal } from './ModifyTableModal';
 import {
@@ -226,6 +237,59 @@ export function DataEditor({ database, table, onClose }: Props) {
         return String(value);
     };
 
+    // Copy helpers
+    const copyAsCSV = () => {
+        const columns = data?.columns.map(c => c.name) || [];
+        const rows = getSelectedRowsData();
+        const header = columns.join(',');
+        const csvData = rows.map(row =>
+            row.map(cell => {
+                if (cell === null) return '';
+                const str = String(cell);
+                return str.includes(',') || str.includes('"') || str.includes('\n')
+                    ? `"${str.replace(/"/g, '""')}"`
+                    : str;
+            }).join(',')
+        ).join('\n');
+        navigator.clipboard.writeText(`${header}\n${csvData}`);
+        toast.success('Copied as CSV');
+    };
+
+    const copyAsJSON = () => {
+        const columns = data?.columns.map(c => c.name) || [];
+        const rows = getSelectedRowsData();
+        const jsonData = rows.map(row => {
+            const obj: Record<string, any> = {};
+            columns.forEach((col, i) => {
+                obj[col] = row[i];
+            });
+            return obj;
+        });
+        navigator.clipboard.writeText(JSON.stringify(jsonData, null, 2));
+        toast.success('Copied as JSON');
+    };
+
+    const copyAsSQLInsert = () => {
+        const columns = data?.columns.map(c => c.name) || [];
+        const rows = getSelectedRowsData();
+        const inserts = rows.map(row => {
+            const values = row.map(cell => {
+                if (cell === null) return 'NULL';
+                if (typeof cell === 'number') return String(cell);
+                return `'${String(cell).replace(/'/g, "''")}'`;
+            }).join(', ');
+            return `INSERT INTO ${table} (${columns.join(', ')}) VALUES (${values});`;
+        }).join('\n');
+        navigator.clipboard.writeText(inserts);
+        toast.success('Copied as SQL INSERT');
+    };
+
+    const getSelectedRowsData = (): any[][] => {
+        if (!data) return [];
+        if (selectedRows.size === 0) return data.rows;
+        return Array.from(selectedRows).sort((a, b) => a - b).map(i => data.rows[i]);
+    };
+
     if (loading && !data) {
         return (
             <div className="h-full flex flex-col items-center justify-center space-y-4">
@@ -366,83 +430,110 @@ export function DataEditor({ database, table, onClose }: Props) {
 
             {/* Main Grid */}
             <div className="flex-1 overflow-hidden relative">
-                <ScrollArea className="h-full w-full">
-                    <Table className="border-collapse min-w-full">
-                        <TableHeader className="bg-card/90 sticky top-0 z-10 backdrop-blur-md shadow-sm">
-                            <TableRow className="border-b shadow-inner">
-                                <TableHead className="w-10 text-center border-r">
-                                    <input
-                                        type="checkbox"
-                                        className="w-3 h-3 rounded accent-primary cursor-pointer"
-                                        checked={data.rows.length > 0 && selectedRows.size === data.rows.length}
-                                        onChange={(e) => {
-                                            if (e.target.checked) setSelectedRows(new Set(data.rows.map((_, i) => i)));
-                                            else setSelectedRows(new Set());
-                                        }}
-                                    />
-                                </TableHead>
-                                {data.columns.map((col, i) => (
-                                    <TableHead key={i} className="text-[10px] font-black uppercase tracking-widest py-3 border-r last:border-r-0 text-muted-foreground px-4">
-                                        <div className="flex items-center justify-between gap-4">
-                                            <div className="flex items-center gap-2">
-                                                {col.name}
-                                                {col.key === 'PRI' && <Badge className="h-3.5 px-1 text-[8px] bg-amber-500 font-black border-none">PK</Badge>}
-                                            </div>
-                                        </div>
-                                    </TableHead>
-                                ))}
-                            </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                            {data.rows.map((row, rowIndex) => (
-                                <TableRow
-                                    key={rowIndex}
-                                    className={cn(
-                                        "group transition-colors border-b last:border-b-0",
-                                        selectedRows.has(rowIndex) ? "bg-primary/5 hover:bg-primary/10" : "hover:bg-accent/30"
-                                    )}
-                                >
-                                    <TableCell className="text-center border-r py-2">
-                                        <input
-                                            type="checkbox"
-                                            className="w-3 h-3 rounded accent-primary cursor-pointer"
-                                            checked={selectedRows.has(rowIndex)}
-                                            onChange={() => toggleRowSelection(rowIndex)}
-                                        />
-                                    </TableCell>
-                                    {row.map((cell, colIndex) => (
-                                        <TableCell
-                                            key={colIndex}
+                <ContextMenu>
+                    <ContextMenuTrigger asChild>
+                        <ScrollArea className="h-full w-full">
+                            <Table className="border-collapse min-w-full">
+                                <TableHeader className="bg-card/90 sticky top-0 z-10 backdrop-blur-md shadow-sm">
+                                    <TableRow className="border-b shadow-inner">
+                                        <TableHead className="w-10 text-center border-r">
+                                            <input
+                                                type="checkbox"
+                                                className="w-3 h-3 rounded accent-primary cursor-pointer"
+                                                checked={data.rows.length > 0 && selectedRows.size === data.rows.length}
+                                                onChange={(e) => {
+                                                    if (e.target.checked) setSelectedRows(new Set(data.rows.map((_, i) => i)));
+                                                    else setSelectedRows(new Set());
+                                                }}
+                                            />
+                                        </TableHead>
+                                        {data.columns.map((col, i) => (
+                                            <TableHead key={i} className="text-[10px] font-black uppercase tracking-widest py-3 border-r last:border-r-0 text-muted-foreground px-4">
+                                                <div className="flex items-center justify-between gap-4">
+                                                    <div className="flex items-center gap-2">
+                                                        {col.name}
+                                                        {col.key === 'PRI' && <Badge className="h-3.5 px-1 text-[8px] bg-amber-500 font-black border-none">PK</Badge>}
+                                                    </div>
+                                                </div>
+                                            </TableHead>
+                                        ))}
+                                    </TableRow>
+                                </TableHeader>
+                                <TableBody>
+                                    {data.rows.map((row, rowIndex) => (
+                                        <TableRow
+                                            key={rowIndex}
                                             className={cn(
-                                                "text-[12px] py-1.5 border-r last:border-r-0 font-medium font-mono min-w-[120px] px-4",
-                                                cell === null ? "text-muted-foreground/30 italic font-normal" : "text-foreground/80",
-                                                editingCell?.row === rowIndex && editingCell?.col === colIndex && "p-0"
+                                                "group transition-colors border-b last:border-b-0",
+                                                selectedRows.has(rowIndex) ? "bg-primary/5 hover:bg-primary/10" : "hover:bg-accent/30"
                                             )}
-                                            onDoubleClick={() => handleCellDoubleClick(rowIndex, colIndex, cell)}
                                         >
-                                            {editingCell?.row === rowIndex && editingCell?.col === colIndex ? (
+                                            <TableCell className="text-center border-r py-2">
                                                 <input
-                                                    type="text"
-                                                    className="w-full h-full bg-background border-2 border-primary outline-none px-4 py-1.5 animate-in zoom-in-95 duration-100 shadow-[0_0_10px_rgba(59,130,246,0.3)] z-50"
-                                                    value={editValue}
-                                                    onChange={(e) => setEditValue(e.target.value)}
-                                                    onKeyDown={handleCellKeyDown}
-                                                    onBlur={handleCellSave}
-                                                    autoFocus
+                                                    type="checkbox"
+                                                    className="w-3 h-3 rounded accent-primary cursor-pointer"
+                                                    checked={selectedRows.has(rowIndex)}
+                                                    onChange={() => toggleRowSelection(rowIndex)}
                                                 />
-                                            ) : (
-                                                <span className="truncate block max-w-[300px]" title={formatValue(cell)}>
-                                                    {formatValue(cell)}
-                                                </span>
-                                            )}
-                                        </TableCell>
+                                            </TableCell>
+                                            {row.map((cell, colIndex) => (
+                                                <TableCell
+                                                    key={colIndex}
+                                                    className={cn(
+                                                        "text-[12px] py-1.5 border-r last:border-r-0 font-medium font-mono min-w-[120px] px-4",
+                                                        cell === null ? "text-muted-foreground/30 italic font-normal" : "text-foreground/80",
+                                                        editingCell?.row === rowIndex && editingCell?.col === colIndex && "p-0"
+                                                    )}
+                                                    onDoubleClick={() => handleCellDoubleClick(rowIndex, colIndex, cell)}
+                                                >
+                                                    {editingCell?.row === rowIndex && editingCell?.col === colIndex ? (
+                                                        <input
+                                                            type="text"
+                                                            className="w-full h-full bg-background border-2 border-primary outline-none px-4 py-1.5 animate-in zoom-in-95 duration-100 shadow-[0_0_10px_rgba(59,130,246,0.3)] z-50"
+                                                            value={editValue}
+                                                            onChange={(e) => setEditValue(e.target.value)}
+                                                            onKeyDown={handleCellKeyDown}
+                                                            onBlur={handleCellSave}
+                                                            autoFocus
+                                                        />
+                                                    ) : (
+                                                        <span className="truncate block max-w-[300px]" title={formatValue(cell)}>
+                                                            {formatValue(cell)}
+                                                        </span>
+                                                    )}
+                                                </TableCell>
+                                            ))}
+                                        </TableRow>
                                     ))}
-                                </TableRow>
-                            ))}
-                        </TableBody>
-                    </Table>
-                    <ScrollBar orientation="horizontal" />
-                </ScrollArea>
+                                </TableBody>
+                            </Table>
+                            <ScrollBar orientation="horizontal" />
+                        </ScrollArea>
+                    </ContextMenuTrigger>
+                    <ContextMenuContent className="w-56">
+                        <ContextMenuItem onClick={copyAsCSV}>
+                            <FileText className="mr-2 h-4 w-4" />
+                            Copy as CSV
+                        </ContextMenuItem>
+                        <ContextMenuItem onClick={copyAsJSON}>
+                            <FileJson className="mr-2 h-4 w-4" />
+                            Copy as JSON
+                        </ContextMenuItem>
+                        <ContextMenuItem onClick={copyAsSQLInsert}>
+                            <Database className="mr-2 h-4 w-4" />
+                            Copy as SQL INSERT
+                        </ContextMenuItem>
+                        <ContextMenuSeparator />
+                        <ContextMenuItem onClick={() => {
+                            const text = getSelectedRowsData().map(row => row.join('\t')).join('\n');
+                            navigator.clipboard.writeText(text);
+                            toast.success('Copied to clipboard');
+                        }}>
+                            <Copy className="mr-2 h-4 w-4" />
+                            Copy Raw
+                        </ContextMenuItem>
+                    </ContextMenuContent>
+                </ContextMenu>
 
                 {/* Floating Bulk Action bar */}
                 {selectedRows.size > 0 && (
