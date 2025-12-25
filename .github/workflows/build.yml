@@ -64,8 +64,8 @@ jobs:
           if [ "${{ matrix.os }}" == "windows-latest" ]; then
             # Move the built binary directly
             mv build/bin/mergen.exe ${{ matrix.name }}
-            # Move the installer
-            mv build/bin/mergen-amd64-installer.exe mergen_installer_windows_amd64.exe
+            # Move the installer (using wildcard to be safe)
+            mv build/bin/*installer.exe mergen_installer_windows_amd64.exe
           elif [ "${{ matrix.os }}" == "ubuntu-22.04" ]; then
             mv build/bin/mergen ${{ matrix.name }}
           else
