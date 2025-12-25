@@ -13,7 +13,9 @@ import { CommandPalette, useCommandPalette } from './components/CommandPalette';
 import { ThemeToggle } from './components/ThemeToggle';
 import { ConnectionConfig, UpdateInfo } from './types';
 import { ToggleFullscreen, CheckForUpdate, GetAppVersion } from '../wailsjs/go/main/App';
+import { WindowToggleMaximise, WindowIsMaximised } from '../wailsjs/runtime/runtime';
 import { UpdateModal } from './components/UpdateModal';
+import { WindowControls } from './components/WindowControls';
 import {
     ResizableHandle,
     ResizablePanel,
@@ -303,8 +305,13 @@ function App() {
             <header
                 className="h-12 border-b bg-card/50 backdrop-blur-xl flex items-center justify-between px-4 shrink-0 shadow-lg z-30"
                 style={{
-                    borderBottomColor: connectionColor ? `${connectionColor}40` : undefined,
-                    boxShadow: connectionColor ? `0 4px 20px ${connectionColor}15` : undefined
+                    boxShadow: connectionColor ? `0 4px 20px ${connectionColor}15` : undefined,
+                    "--wails-draggable": "drag"
+                } as any}
+                onDoubleClick={async () => {
+                    await WindowToggleMaximise();
+                    const isMax = await WindowIsMaximised();
+                    setIsFullscreen(isMax);
                 }}
             >
                 <div className="flex items-center gap-6">
@@ -358,13 +365,9 @@ function App() {
 
                     <ThemeToggle />
 
-                    <button
-                        onClick={handleToggleFullscreen}
-                        className="w-8 h-8 rounded-lg flex items-center justify-center text-muted-foreground hover:text-primary hover:bg-primary/10 transition-all border border-transparent hover:border-primary/20 shadow-none hover:shadow-lg hover:shadow-primary/5"
-                        title={isFullscreen ? t('app.exitFullscreen') : t('app.enterFullscreen')}
-                    >
-                        {isFullscreen ? <Minimize2 size={16} /> : <Maximize2 size={16} />}
-                    </button>
+                    <Separator orientation="vertical" className="h-5 bg-border/40" />
+
+                    <WindowControls />
                 </div>
             </header>
 
